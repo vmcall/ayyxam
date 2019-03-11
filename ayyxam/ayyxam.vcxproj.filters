@@ -56,7 +56,7 @@
     <ClInclude Include="logger.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="protected_list.hpp">
+    <ClInclude Include="guard.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -28,7 +28,6 @@ namespace ayyxam::hooks
 	extern BOOL WINAPI bit_blt(HDC hdc, int x, int y, int cx, int cy, HDC hdc_src, int x1, int y1, DWORD rop);
 	extern bit_blt_t original_bit_blt;
 
-
 	// UIAutomationCore!RawUiaGetPropertyValue
 	using get_property_value_t = std::int32_t(WINAPI*)(void* handle, std::int32_t property_id, void* value);
 

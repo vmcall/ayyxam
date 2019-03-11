@@ -1,12 +1,13 @@
 #include "hooks.hpp"
 #include "global.hpp"
+#include "guard.hpp"
+
+#include <string>
 
 ayyxam::hooks::nt_query_system_information_t ayyxam::hooks::original_nt_query_system_information = nullptr;
 ayyxam::hooks::get_adapters_addresses_t ayyxam::hooks::original_get_adapters_addresses = nullptr;
 ayyxam::hooks::bit_blt_t ayyxam::hooks::original_bit_blt = nullptr;
 ayyxam::hooks::get_property_value_t ayyxam::hooks::original_get_property_value = nullptr;
-
-
 
 NTSTATUS WINAPI ayyxam::hooks::nt_query_system_information(SYSTEM_INFORMATION_CLASS system_information_class, PVOID system_information, ULONG system_information_length, PULONG return_length)
 {
@@ -64,7 +65,6 @@ NTSTATUS WINAPI ayyxam::hooks::nt_query_system_information(SYSTEM_INFORMATION_CL
 		previous_entry = entry;
 	}
 
-
 	return value;
 }
 
@@ -72,7 +72,70 @@ ULONG WINAPI ayyxam::hooks::get_adapters_addresses(ULONG family, ULONG flags, PV
 {
 	ayyxam::global::console.log("GetAdaptersAddresses called");
 
-	return ayyxam::hooks::original_get_adapters_addresses(family, flags, reserved, adapter_addresses, size_pointer);
+	// CALL ORIGINAL TO HIDE ENTRIES
+	const auto result = ayyxam::hooks::original_get_adapters_addresses(family, flags, reserved, adapter_addresses, size_pointer);
+
+	// DO NOT HANDLE ERRORS
+	if (!result)
+		return result;
+
+	for (
+		auto current_entry = adapter_addresses, previous_entry = adapter_addresses;
+		current_entry != nullptr; 
+		current_entry = current_entry->Next)
+	{
+		// FILTER BY FRIENDLY NAME
+		const auto friendly_name = std::wstring(current_entry->FriendlyName);
+
+		// ITERATE GUARDED ADAPTERS
+		for (auto protected_adapter : guard::hidden_adapter)
+		{
+			if (protected_adapter.compare(friendly_name) != 0)
+			{
+				// PROTECTED ADAPTER FOUND:
+				// IF NOT FIRST ENTRY, SKIP!
+				if (previous_entry != current_entry)
+				{
+					previous_entry->Next = current_entry->Next;
+				}
+				else
+				{
+					// RELOCATE ENTIRE STRUCTURE TO OVERRIDE FIRST ENTRY :)
+
+					// CALCULATE SIZE OF FIRST ENTRY
+					const auto delta = current_entry->Length;
+					const auto remaining_size = *size_pointer - delta;
+
+					ayyxam::global::console.log_formatted<true>("Delta", delta);
+					ayyxam::global::console.log_formatted<true>("Remaining size", remaining_size);
+
+					// CACHE ADDRESS TO COPY FROM LATER ON
+					const auto copy_next = current_entry->Next;
+
+					// RELOCATE ALL ENTRIES IN LINKED LIST, SKIP FIRST ELEMENT
+					for (auto inner_entry = current_entry->Next; inner_entry != nullptr; )
+					{
+						// CACHE NEXT ADDRESS FOR LATER
+						const auto real_next = inner_entry->Next;
+
+						// RELOCATE
+						*reinterpret_cast<std::uint8_t**>(&inner_entry->Next) -= delta;
+
+						// CONTINUE ITERATING
+						inner_entry = real_next;
+					}
+
+					// MOVE OVER ALL OTHER ENTIRES, OVERWRITING OLD
+					memcpy(current_entry, copy_next, remaining_size);
+
+				}
+
+				break;
+			}
+		}
+	}
+
+	return result;
 }
 
 BOOL __stdcall ayyxam::hooks::bit_blt(HDC hdc, int x, int y, int cx, int cy, HDC hdc_src, int x1, int y1, DWORD rop)
