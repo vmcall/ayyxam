@@ -1,5 +1,5 @@
 # ayyxam
-The Danish Ministry of Education recently published a mandatory surveillance program for exams called Den Digitale Prøvevagt (Translation: The Digital Exam Monitor).
+The Danish Ministry of Education recently published a mandatory surveillance program for highschool exams called Den Digitale Prøvevagt (Translation: The Digital Exam Monitor).
 This repository will host a bypass for the respective surveillance software and gradually update to combat their countermeasures..
 
 ᕕ( ᐛ )ᕗ
