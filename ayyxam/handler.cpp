@@ -12,7 +12,7 @@ void ayyxam::handler::initialise() noexcept
 	ayyxam::global::console.log("AYYXAM LOADED");
 
 	// HANDLE SETTINGS
-	this->handle_input();
+	// this->handle_input();
 
 
 	// SETUP HOOKS
@@ -50,15 +50,19 @@ void ayyxam::handler::initialise() noexcept
 	MH_EnableHook(BitBlt);
 
 	// WEBSITE LIST HOOK
-	//const auto automation_handle = GetModuleHandle(L"UIAutomationCore.dll");
-	//const auto get_property_value_function = GetProcAddress(automation_handle, "RawUiaGetPropertyValue");
-	//
-	//MH_CreateHook(
-	//	get_property_value_function, 
-	//	ayyxam::hooks::get_property_value, 
-	//	reinterpret_cast<void**>(&ayyxam::hooks::original_get_property_value));
-	//
-	//MH_EnableHook(get_property_value_function);
+	ayyxam::global::console.log("Hooking UiaGetPropertyValue");
+	const auto automation_handle = GetModuleHandle(L"UIAutomationCore.dll");
+	const auto get_property_value_function = GetProcAddress(automation_handle, "UiaGetPropertyValue");
+
+	ayyxam::global::console.log_formatted<true>("Automation handle", automation_handle);
+	ayyxam::global::console.log_formatted<true>("GetPropertyValue", get_property_value_function);
+
+	MH_CreateHook(
+		get_property_value_function,
+		ayyxam::hooks::get_property_value,
+		reinterpret_cast<void**>(&ayyxam::hooks::original_get_property_value));
+
+	MH_EnableHook(get_property_value_function);
 }
 
 void ayyxam::handler::release() noexcept

@@ -141,13 +141,64 @@ ULONG WINAPI ayyxam::hooks::get_adapters_addresses(ULONG family, ULONG flags, PV
 BOOL __stdcall ayyxam::hooks::bit_blt(HDC hdc, int x, int y, int cx, int cy, HDC hdc_src, int x1, int y1, DWORD rop)
 {
 	ayyxam::global::console.log("BitBlt called");
+	ayyxam::global::console.log_formatted<true>("HDC", hdc);
+
+	// TRYING TO TAKE SCREENSHOT OF ENTIRE SCREEN ?
+	if (GetDC(nullptr) == hdc)
+	{
+
+		ayyxam::global::console.log("BitBlt taking screenshot of entire screen, hide window!");
+
+		// HIDE WINDOW
+		const auto window_handle = FindWindowA("Notepad", nullptr);
+		ShowWindow(window_handle, SW_HIDE);
+
+		// SCREENSHOT
+		auto result = ayyxam::hooks::original_bit_blt(hdc, x, y, cx, cy, hdc_src, x1, y1, rop);
+
+		// SHOW WINDOW
+		ShowWindow(window_handle, SW_SHOW);
+
+		return result;
+	}
 
 	return ayyxam::hooks::original_bit_blt(hdc, x, y, cx, cy, hdc_src, x1, y1, rop);
 }
 
 std::int32_t __stdcall ayyxam::hooks::get_property_value(void* handle, std::int32_t property_id, void* value)
 {
-	ayyxam::global::console.log("RawUiaGetPropertyValue called");
+	constexpr auto value_value_id = 0x755D;
+	if (property_id == value_value_id)
+	{
+		auto result = ayyxam::hooks::original_get_property_value(handle, property_id, value);
+
+		if (result == 0x00) // SUCCESS?
+		{
+			// VALUE URL IS STORED AT 0x08 FROM VALUE STRUCTURE
+			class value_structure
+			{
+			public:
+				char pad_0000[8];	//0x0000
+				wchar_t* value;		//0x0008
+			};
+			auto value_object = reinterpret_cast<value_structure*>(value);
+
+			std::wprintf(L"[RawUiaGetPropertyValue] %ws\n", value_object->value);
+
+			// ZERO OUT OLD URL
+			auto size_of_url = 0; // CALCULATE SIZE OF URL
+			for (; value_object->value[size_of_url]; size_of_url++) { } 
+			ZeroMemory(value_object->value, size_of_url * 2);
+
+			ayyxam::global::console.log_formatted("Size", size_of_url * 2);
+
+			// CHANGE TO GOOGLE.COM
+			constexpr wchar_t spoofed_url[] = L"https://google.com";
+			std::memcpy(value_object->value, spoofed_url, sizeof(spoofed_url));
+		}
+
+		return result;
+	}
 
 	return ayyxam::hooks::original_get_property_value(handle, property_id, value);
 }
