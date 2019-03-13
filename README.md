@@ -6,6 +6,7 @@ This repository will host a bypass for the respective surveillance software and 
 
 # How to use
 Inject the x86 module into the DPV process and specify your personal settings.
+Note: The source code in the repo is not functional, as in it wont hide anything cheat-related, to prevent promotion of cheating.
 
 # How does it work?
 Read the article on my blog [here](https://vmcall.github.io/reversal/2019/03/07/exam-surveillance.html)
