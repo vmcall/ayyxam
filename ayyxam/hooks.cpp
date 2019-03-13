@@ -17,8 +17,6 @@ NTSTATUS WINAPI ayyxam::hooks::nt_query_system_information(SYSTEM_INFORMATION_CL
 				system_information_class, system_information,
 				system_information_length, return_length);
 
-	ayyxam::global::console.log("NtQuerySystemInformation called");
-	
 	// HIDE PROCESSES
 	const auto value = ayyxam::hooks::original_nt_query_system_information(
 			system_information_class, system_information, 
@@ -55,7 +53,8 @@ NTSTATUS WINAPI ayyxam::hooks::nt_query_system_information(SYSTEM_INFORMATION_CL
 	SYSTEM_PROCESS_INFO* previous_entry = nullptr;
 	for (; entry->NextEntryOffset > 0x00; entry = get_next_entry(entry))
 	{
-		if (entry->ProcessId == reinterpret_cast<HANDLE>(7488) && previous_entry != nullptr)
+		constexpr auto protected_id = 7488;
+		if (entry->ProcessId == reinterpret_cast<HANDLE>(protected_id) && previous_entry != nullptr)
 		{
 			// SKIP ENTRY
 			previous_entry->NextEntryOffset += entry->NextEntryOffset;
@@ -70,8 +69,6 @@ NTSTATUS WINAPI ayyxam::hooks::nt_query_system_information(SYSTEM_INFORMATION_CL
 
 ULONG WINAPI ayyxam::hooks::get_adapters_addresses(ULONG family, ULONG flags, PVOID reserved, PIP_ADAPTER_ADDRESSES adapter_addresses, PULONG size_pointer)
 {
-	ayyxam::global::console.log("GetAdaptersAddresses called");
-
 	// CALL ORIGINAL TO HIDE ENTRIES
 	const auto result = ayyxam::hooks::original_get_adapters_addresses(family, flags, reserved, adapter_addresses, size_pointer);
 
@@ -79,8 +76,7 @@ ULONG WINAPI ayyxam::hooks::get_adapters_addresses(ULONG family, ULONG flags, PV
 	if (!result)
 		return result;
 
-	for (
-		auto current_entry = adapter_addresses, previous_entry = adapter_addresses;
+	for (auto current_entry = adapter_addresses, previous_entry = adapter_addresses;
 		current_entry != nullptr; 
 		current_entry = current_entry->Next)
 	{
@@ -90,48 +86,46 @@ ULONG WINAPI ayyxam::hooks::get_adapters_addresses(ULONG family, ULONG flags, PV
 		// ITERATE GUARDED ADAPTERS
 		for (auto protected_adapter : guard::hidden_adapter)
 		{
-			if (protected_adapter.compare(friendly_name) != 0)
+			if (protected_adapter != friendly_name)
+				continue;
+
+			// PROTECTED ADAPTER FOUND:
+			// IF NOT FIRST ENTRY, SKIP!
+			if (previous_entry != current_entry)
 			{
-				// PROTECTED ADAPTER FOUND:
-				// IF NOT FIRST ENTRY, SKIP!
-				if (previous_entry != current_entry)
-				{
-					previous_entry->Next = current_entry->Next;
-				}
-				else
-				{
-					// RELOCATE ENTIRE STRUCTURE TO OVERRIDE FIRST ENTRY :)
-
-					// CALCULATE SIZE OF FIRST ENTRY
-					const auto delta = current_entry->Length;
-					const auto remaining_size = *size_pointer - delta;
-
-					ayyxam::global::console.log_formatted<true>("Delta", delta);
-					ayyxam::global::console.log_formatted<true>("Remaining size", remaining_size);
-
-					// CACHE ADDRESS TO COPY FROM LATER ON
-					const auto copy_next = current_entry->Next;
-
-					// RELOCATE ALL ENTRIES IN LINKED LIST, SKIP FIRST ELEMENT
-					for (auto inner_entry = current_entry->Next; inner_entry != nullptr; )
-					{
-						// CACHE NEXT ADDRESS FOR LATER
-						const auto real_next = inner_entry->Next;
-
-						// RELOCATE
-						*reinterpret_cast<std::uint8_t**>(&inner_entry->Next) -= delta;
-
-						// CONTINUE ITERATING
-						inner_entry = real_next;
-					}
-
-					// MOVE OVER ALL OTHER ENTIRES, OVERWRITING OLD
-					memcpy(current_entry, copy_next, remaining_size);
-
-				}
-
-				break;
+				previous_entry->Next = current_entry->Next;
 			}
+			else
+			{
+				// RELOCATE ENTIRE STRUCTURE TO OVERRIDE FIRST ENTRY :)
+
+				// CALCULATE SIZE OF FIRST ENTRY
+				const auto delta = current_entry->Length;
+				const auto remaining_size = *size_pointer - delta;
+
+				// CACHE ADDRESS TO COPY FROM LATER ON
+				const auto copy_next = current_entry->Next;
+
+				// RELOCATE ALL ENTRIES IN LINKED LIST, SKIP FIRST ELEMENT
+				for (auto inner_entry = current_entry->Next; inner_entry != nullptr; )
+				{
+					// CACHE NEXT ADDRESS FOR LATER
+					const auto real_next = inner_entry->Next;
+
+					// RELOCATE
+					*reinterpret_cast<std::uint8_t**>(&inner_entry->Next) -= delta;
+
+					// CONTINUE ITERATING
+					inner_entry = real_next;
+				}
+
+				// MOVE OVER ALL OTHER ENTIRES, OVERWRITING OLD
+				std::memcpy(current_entry, copy_next, remaining_size);
+
+			}
+
+			break;
+
 		}
 	}
 
@@ -140,65 +134,49 @@ ULONG WINAPI ayyxam::hooks::get_adapters_addresses(ULONG family, ULONG flags, PV
 
 BOOL __stdcall ayyxam::hooks::bit_blt(HDC hdc, int x, int y, int cx, int cy, HDC hdc_src, int x1, int y1, DWORD rop)
 {
-	ayyxam::global::console.log("BitBlt called");
-	ayyxam::global::console.log_formatted<true>("HDC", hdc);
-
 	// TRYING TO TAKE SCREENSHOT OF ENTIRE SCREEN ?
-	if (GetDC(nullptr) == hdc)
-	{
+	if (GetDC(nullptr) != hdc)
+		return ayyxam::hooks::original_bit_blt(hdc, x, y, cx, cy, hdc_src, x1, y1, rop);
 
-		ayyxam::global::console.log("BitBlt taking screenshot of entire screen, hide window!");
+	// HIDE WINDOW
+	const auto window_handle = FindWindowA("Notepad", nullptr);
+	ShowWindow(window_handle, SW_HIDE);
 
-		// HIDE WINDOW
-		const auto window_handle = FindWindowA("Notepad", nullptr);
-		ShowWindow(window_handle, SW_HIDE);
+	// SCREENSHOT
+	auto result = ayyxam::hooks::original_bit_blt(hdc, x, y, cx, cy, hdc_src, x1, y1, rop);
 
-		// SCREENSHOT
-		auto result = ayyxam::hooks::original_bit_blt(hdc, x, y, cx, cy, hdc_src, x1, y1, rop);
+	// SHOW WINDOW
+	ShowWindow(window_handle, SW_SHOW);
 
-		// SHOW WINDOW
-		ShowWindow(window_handle, SW_SHOW);
-
-		return result;
-	}
-
-	return ayyxam::hooks::original_bit_blt(hdc, x, y, cx, cy, hdc_src, x1, y1, rop);
+	return result;
 }
 
 std::int32_t __stdcall ayyxam::hooks::get_property_value(void* handle, std::int32_t property_id, void* value)
 {
 	constexpr auto value_value_id = 0x755D;
-	if (property_id == value_value_id)
-	{
-		auto result = ayyxam::hooks::original_get_property_value(handle, property_id, value);
+	if (property_id != value_value_id)
+		return ayyxam::hooks::original_get_property_value(handle, property_id, value);
 
-		if (result == 0x00) // SUCCESS?
-		{
-			// VALUE URL IS STORED AT 0x08 FROM VALUE STRUCTURE
-			class value_structure
-			{
-			public:
-				char pad_0000[8];	//0x0000
-				wchar_t* value;		//0x0008
-			};
-			auto value_object = reinterpret_cast<value_structure*>(value);
+	auto result = ayyxam::hooks::original_get_property_value(handle, property_id, value);
 
-			std::wprintf(L"[RawUiaGetPropertyValue] %ws\n", value_object->value);
-
-			// ZERO OUT OLD URL
-			auto size_of_url = 0; // CALCULATE SIZE OF URL
-			for (; value_object->value[size_of_url]; size_of_url++) { } 
-			ZeroMemory(value_object->value, size_of_url * 2);
-
-			ayyxam::global::console.log_formatted("Size", size_of_url * 2);
-
-			// CHANGE TO GOOGLE.COM
-			constexpr wchar_t spoofed_url[] = L"https://google.com";
-			std::memcpy(value_object->value, spoofed_url, sizeof(spoofed_url));
-		}
-
+	if (result != S_OK) // SUCCESS?
 		return result;
-	}
 
-	return ayyxam::hooks::original_get_property_value(handle, property_id, value);
+	// VALUE URL IS STORED AT 0x08 FROM VALUE STRUCTURE
+	class value_structure
+	{
+	public:
+		char pad_0000[8];	//0x0000
+		wchar_t* value;		//0x0008
+	};
+	auto value_object = reinterpret_cast<value_structure*>(value);
+
+	// ZERO OUT OLD URL
+	std::memset(value_object->value, 0x00, std::wcslen(value_object->value) * 2);
+
+	// CHANGE TO GOOGLE.COM
+	constexpr wchar_t spoofed_url[] = L"https://google.com";
+	std::memcpy(value_object->value, spoofed_url, sizeof(spoofed_url));
+
+	return result;
 }
