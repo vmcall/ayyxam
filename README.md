@@ -5,7 +5,7 @@ This repository will host a bypass for the respective surveillance software and 
 ᕕ( ᐛ )ᕗ
 
 # How to use
-Inject the x86 module into the DPV process and specify your personal settings.
+Inject the x86 module into the DDP process and specify your personal settings.
 
 Note: The source code in the repository wont hide anything cheat-related, to prevent promotion of cheating.
 
