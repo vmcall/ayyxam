@@ -21,55 +21,55 @@ void ayyxam::handler::initialise() noexcept
 
 	ayyxam::global::console.log("Initialised MinHook..!");
 
-	//		// PROCESS LIST HOOK
-	//		ayyxam::global::console.log("Hooking NtQuerySystemInformation");
-	//		MH_CreateHook(
-	//			NtQuerySystemInformation, 
-	//			ayyxam::hooks::nt_query_system_information, 
-	//			reinterpret_cast<void**>(&ayyxam::hooks::original_nt_query_system_information));
-	//		
-	//		MH_EnableHook(NtQuerySystemInformation);
-	//		
-	//		// NETWORK ADAPTER HOOK
-	//		ayyxam::global::console.log("Hooking GetAdaptersAddresses");
-	//		MH_CreateHook(
-	//			GetAdaptersAddresses, 
-	//			ayyxam::hooks::get_adapters_addresses, 
-	//			reinterpret_cast<void**>(&ayyxam::hooks::original_get_adapters_addresses));
-	//		
-	//		MH_EnableHook(GetAdaptersAddresses);
-	//		
-	//		// SCREENSHOT HOOK
-	//		ayyxam::global::console.log("Hooking BitBlt");
-	//		MH_CreateHook(
-	//			BitBlt, 
-	//			ayyxam::hooks::bit_blt, 
-	//			reinterpret_cast<void**>(&ayyxam::hooks::original_bit_blt));
-	//		
-	//		MH_EnableHook(BitBlt);
-	//		
-	//		// CREATE PROCESS HOOK (ExamCookie SPECIFIC)
-	//		ayyxam::global::console.log("Hooking CreateProcess");
-	//		MH_CreateHook(CreateProcess, 
-	//			ayyxam::hooks::create_process, 
-	//			reinterpret_cast<void**>(&ayyxam::hooks::original_create_process));
-	//		
-	//		MH_EnableHook(CreateProcess);
-	//		
-	//		// WEBSITE LIST HOOK
-	//		ayyxam::global::console.log("Hooking UiaGetPropertyValue");
-	//		const auto automation_handle = GetModuleHandle(L"UIAutomationCore.dll");
-	//		const auto get_property_value_function = GetProcAddress(automation_handle, "UiaGetPropertyValue");
-	//		
-	//		ayyxam::global::console.log_formatted<true>("Automation handle", automation_handle);
-	//		ayyxam::global::console.log_formatted<true>("GetPropertyValue", get_property_value_function);
-	//		
-	//		MH_CreateHook(
-	//			get_property_value_function,
-	//			ayyxam::hooks::get_property_value,
-	//			reinterpret_cast<void**>(&ayyxam::hooks::original_get_property_value));
-	//		
-	//		MH_EnableHook(get_property_value_function);
+	// PROCESS LIST HOOK
+	ayyxam::global::console.log("Hooking NtQuerySystemInformation");
+	MH_CreateHook(
+		NtQuerySystemInformation, 
+		ayyxam::hooks::nt_query_system_information, 
+		reinterpret_cast<void**>(&ayyxam::hooks::original_nt_query_system_information));
+	
+	MH_EnableHook(NtQuerySystemInformation);
+	
+	// NETWORK ADAPTER HOOK
+	ayyxam::global::console.log("Hooking GetAdaptersAddresses");
+	MH_CreateHook(
+		GetAdaptersAddresses, 
+		ayyxam::hooks::get_adapters_addresses, 
+		reinterpret_cast<void**>(&ayyxam::hooks::original_get_adapters_addresses));
+	
+	MH_EnableHook(GetAdaptersAddresses);
+	
+	// SCREENSHOT HOOK
+	ayyxam::global::console.log("Hooking BitBlt");
+	MH_CreateHook(
+		BitBlt, 
+		ayyxam::hooks::bit_blt, 
+		reinterpret_cast<void**>(&ayyxam::hooks::original_bit_blt));
+	
+	MH_EnableHook(BitBlt);
+	
+	// CREATE PROCESS HOOK (ExamCookie SPECIFIC)
+	ayyxam::global::console.log("Hooking CreateProcess");
+	MH_CreateHook(CreateProcess, 
+		ayyxam::hooks::create_process, 
+		reinterpret_cast<void**>(&ayyxam::hooks::original_create_process));
+	
+	MH_EnableHook(CreateProcess);
+	
+	// WEBSITE LIST HOOK
+	ayyxam::global::console.log("Hooking UiaGetPropertyValue");
+	const auto automation_handle = GetModuleHandle(L"UIAutomationCore.dll");
+	const auto get_property_value_function = GetProcAddress(automation_handle, "UiaGetPropertyValue");
+	
+	ayyxam::global::console.log_formatted<true>("Automation handle", automation_handle);
+	ayyxam::global::console.log_formatted<true>("GetPropertyValue", get_property_value_function);
+	
+	MH_CreateHook(
+		get_property_value_function,
+		ayyxam::hooks::get_property_value,
+		reinterpret_cast<void**>(&ayyxam::hooks::original_get_property_value));
+	
+	MH_EnableHook(get_property_value_function);
 
 
 	// CLIPBOARD HOOK
