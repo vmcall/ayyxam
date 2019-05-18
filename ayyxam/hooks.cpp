@@ -9,6 +9,7 @@ ayyxam::hooks::get_adapters_addresses_t ayyxam::hooks::original_get_adapters_add
 ayyxam::hooks::bit_blt_t ayyxam::hooks::original_bit_blt = nullptr;
 ayyxam::hooks::get_property_value_t ayyxam::hooks::original_get_property_value = nullptr;
 ayyxam::hooks::create_process_t ayyxam::hooks::original_create_process = nullptr;
+ayyxam::hooks::get_clipboard_t ayyxam::hooks::original_get_clipboard = nullptr;
 
 NTSTATUS WINAPI ayyxam::hooks::nt_query_system_information(SYSTEM_INFORMATION_CLASS system_information_class, PVOID system_information, ULONG system_information_length, PULONG return_length)
 {
@@ -208,4 +209,10 @@ BOOL WINAPI ayyxam::hooks::create_process(
 		thread_attributes, inherit_handles, creation_flags,
 		environment, current_directory, startup_information,
 		process_information);
+}
+
+std::int32_t __stdcall ayyxam::hooks::get_clipboard(void* data_object[[maybe_unused]])
+{
+	// LOL
+	return S_OK;
 }

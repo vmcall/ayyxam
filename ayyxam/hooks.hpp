@@ -51,4 +51,10 @@ namespace ayyxam::hooks
 		LPPROCESS_INFORMATION lpProcessInformation);
 
 	extern create_process_t original_create_process;
+
+
+	// ole32!OleGetClipboard
+	using get_clipboard_t = std::int32_t(__stdcall*)(void* data_object);
+	extern std::int32_t __stdcall get_clipboard(void* data_object);
+	extern get_clipboard_t original_get_clipboard;
 }
