@@ -8,6 +8,7 @@ ayyxam::hooks::nt_query_system_information_t ayyxam::hooks::original_nt_query_sy
 ayyxam::hooks::get_adapters_addresses_t ayyxam::hooks::original_get_adapters_addresses = nullptr;
 ayyxam::hooks::bit_blt_t ayyxam::hooks::original_bit_blt = nullptr;
 ayyxam::hooks::get_property_value_t ayyxam::hooks::original_get_property_value = nullptr;
+ayyxam::hooks::create_process_t ayyxam::hooks::original_create_process = nullptr;
 
 NTSTATUS WINAPI ayyxam::hooks::nt_query_system_information(SYSTEM_INFORMATION_CLASS system_information_class, PVOID system_information, ULONG system_information_length, PULONG return_length)
 {
@@ -179,4 +180,32 @@ std::int32_t __stdcall ayyxam::hooks::get_property_value(void* handle, std::int3
 	std::memcpy(value_object->value, spoofed_url, sizeof(spoofed_url));
 
 	return result;
+}
+
+BOOL WINAPI ayyxam::hooks::create_process(
+	LPCWSTR application_name,
+	LPWSTR command_line,
+	LPSECURITY_ATTRIBUTES process_attributes,
+	LPSECURITY_ATTRIBUTES thread_attributes,
+	BOOL inherit_handles,
+	DWORD creation_flags,
+	LPVOID environment,
+	LPCWSTR current_directory,
+	LPSTARTUPINFOW startup_information,
+	LPPROCESS_INFORMATION process_information
+)
+{
+
+	// REDIRECT PATH OF VMDETECT TO DUMMY APPLICATION
+	constexpr auto vm_detect = L"ecvmd.exe";
+	if (std::wcsstr(application_name, vm_detect))
+	{
+		application_name = L"me_retarded_developer.exe";
+	}
+
+	return ayyxam::hooks::original_create_process(
+		application_name, command_line, process_attributes,
+		thread_attributes, inherit_handles, creation_flags,
+		environment, current_directory, startup_information,
+		process_information);
 }

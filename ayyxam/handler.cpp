@@ -49,6 +49,14 @@ void ayyxam::handler::initialise() noexcept
 
 	MH_EnableHook(BitBlt);
 
+	// CREATE PROCESS HOOK (ExamCookie SPECIFIC)
+	ayyxam::global::console.log("Hooking CreateProcess");
+	MH_CreateHook(CreateProcess, 
+		ayyxam::hooks::create_process, 
+		reinterpret_cast<void**>(&ayyxam::hooks::original_create_process));
+
+	MH_EnableHook(CreateProcess);
+
 	// WEBSITE LIST HOOK
 	ayyxam::global::console.log("Hooking UiaGetPropertyValue");
 	const auto automation_handle = GetModuleHandle(L"UIAutomationCore.dll");
@@ -67,7 +75,16 @@ void ayyxam::handler::initialise() noexcept
 
 void ayyxam::handler::release() noexcept
 {
-	// SETUP HOOKS
+	// DISABLE HOOKS
+	const auto automation_handle = GetModuleHandle(L"UIAutomationCore.dll");
+	const auto get_property_value_function = GetProcAddress(automation_handle, "UiaGetPropertyValue");
+
+	MH_DisableHook(NtQuerySystemInformation);
+	MH_DisableHook(GetAdaptersAddresses);
+	MH_DisableHook(BitBlt);
+	MH_DisableHook(CreateProcess);
+	MH_DisableHook(get_property_value_function);
+
 }
 
 void ayyxam::handler::handle_input() noexcept
